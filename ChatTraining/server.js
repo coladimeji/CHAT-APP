@@ -54,6 +54,7 @@ const io = require("socket.io")(server)
 io.on('connection', (socket) => {
   // run everytime  client connect (connection event)
   console.log('client connected: ' + socket.id)
+
   
   // socket name defaulted to its id
   socket.name = socket.id
@@ -74,6 +75,48 @@ io.on('connection', (socket) => {
   }).catch((err) => {
     console.log(err)
   })
+
+  // join room event
+  socket.on('changeroom', (data) => {
+    console.log(data.room)
+
+    
+    // push user event change room to db
+    let newEvent = new UEvent({
+      user_name:socket.name,
+      event:"user changeroom",
+      eventDesc:`${socket.name} changed to room ${data.room}`,
+      time:new Date().getTime()
+      
+    })
+      
+    newEvent.save().then((result) => {
+      console.log(result)
+      
+    }).catch((err) => {
+      console.log(err)
+    })
+
+    // send message to previous room if the user already connected 
+    if (socket.room_id) {
+      io.to(socket.room_id).emit('user_left', {username: socket.name})
+      socket.leave(socket.room_id)
+    }
+
+    // save room index to socket objects
+    socket.room_id = data.room
+
+    // let the socket joins target room
+    socket.join(socket.room_id)
+
+    // send message to the new room
+    io.to(socket.room_id).emit('user_entered', {username: socket.name})
+
+  })
+
+
+
+
 
   // on receiving messages
   socket.on('msg', (data) => {
@@ -139,7 +182,8 @@ io.on('connection', (socket) => {
 
   socket.on("disconnect", () =>  {
     console.log("Disconnected...")
-
+    io.to(socket.room_id).emit('user_left', {username: socket.name})
+    socket.leave(socket.room_id)
     let newEvent = new UEvent({
       user_name:socket.name,
       event:"user disconnected",
