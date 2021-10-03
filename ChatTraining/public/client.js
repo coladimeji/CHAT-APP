@@ -10,15 +10,45 @@ $(() => {
     let send_username = $("#send_username")
     let chatroom = $("#chatroom")
     let feedback = $("#feedback")
-  
+    let room = $("#room")
+    let send_roomid = $("#send_roomid")
+    let dip = $("#dip")
+
+
     console.log("chat.js mounted")
 
+    // get room id
+    let room_id = room.prop('selectedIndex')
+
+    // update room id and send to server
+    let UpdateRoomID = () => {
+
+      // refresh room id
+      room_id = room.prop('selectedIndex') + 1
+
+      // send new room id to the server
+      // require data from data base
+      socket.emit('changeroom', {room: room_id})
+      // server need to diplay leave and enter message
+      console.log(room_id)
+
+    }
+
+    UpdateRoomID()
+
+    // set room id on click
+    send_roomid.click(UpdateRoomID)
 
 
-    // socket io key word:
+
+    // client key word:
     // "msg": {msg} client message
     // "changename": {newname} client name change
-
+    
+    // server key word
+    // "chat_room_history"
+    // "user_enters"
+    // "user_leaves"
 
 
     // send message button function
@@ -32,7 +62,9 @@ $(() => {
       // send new message object to server
       socket.emit('msg', {msg: message.val()})
       console.log("message sent")
-  
+      console.log(room_id)
+
+      
     })
 
 
@@ -57,7 +89,37 @@ $(() => {
       chatroom.append("<p class='message'>" + data.username + ": " + data.message + "</p>")
     })
   
-  
+
+
+
+    // on receiving target room history
+    socket.on('chat_room_history', (data) => {
+
+      // for each history from database, append html element to chatroom
+      // data.forEach(element => {
+      //   // clear caht history 
+
+      //   // append html element to the chatroom
+      //   chatroom.append("<p class='message'>" + data.username + ": " + data.message + "</p>")
+        
+      // })
+
+    })
+
+
+
+    // user enter chat room
+    socket.on('user_entered', (data) => {
+      chatroom.append("<p class='message'>" + data.username + " Entered Chat" + "</p>")
+    })
+
+
+    // user leave chat room
+    socket.on('user_left', (data) => {
+      chatroom.append("<p class='message'><h5>" + data.username + " Left Chat" + "</h5></p>")
+    })
+
+
 
 
     // xxx is typing notification
