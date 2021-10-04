@@ -47,6 +47,15 @@ server = app.listen(port, hostname, () => {
 })
 
 
+// get current time function
+let GetCurrTime = () => {
+  return new Date().toLocaleString()
+}
+
+
+
+
+
 // create socket.io
 const io = require("socket.io")(server)
 
@@ -64,7 +73,7 @@ io.on('connection', (socket) => {
     user_name:socket.name,
     event:"user connected",
     eventDesc:"user  connected to the server",
-    time:new Date().getTime()
+    time:GetCurrTime()
     
   })
 
@@ -86,7 +95,7 @@ io.on('connection', (socket) => {
       user_name:socket.name,
       event:"user changeroom",
       eventDesc:`${socket.name} changed to room ${data.room}`,
-      time:new Date().getTime()
+      time:GetCurrTime()
       
     })
       
@@ -99,8 +108,9 @@ io.on('connection', (socket) => {
 
     // send message to previous room if the user already connected 
     if (socket.room_id) {
-      io.to(socket.room_id).emit('user_left', {username: socket.name})
+      io.to(socket.room_id).emit('user_left', {username: socket.name, room: socket.room_id})
       socket.leave(socket.room_id)
+
     }
 
     // save room index to socket objects
@@ -110,7 +120,7 @@ io.on('connection', (socket) => {
     socket.join(socket.room_id)
 
     // send message to the new room
-    io.to(socket.room_id).emit('user_entered', {username: socket.name})
+    io.to(socket.room_id).emit('user_entered', {username: socket.name, room: socket.room_id})
 
   })
 
@@ -122,14 +132,14 @@ io.on('connection', (socket) => {
   socket.on('msg', (data) => {
     console.log(data.msg)
     // broadcast the new message to all the client
-    io.sockets.emit('new_msg', {username: socket.name, message: data.msg })
+    io.to(socket.room_id).emit('new_msg', {username: socket.name, message: data.msg })
 
     // implement push chat record to db
     let newRecord = new Record({
       user_name:  socket.name,
       msg:  data.msg,
-      room:0,
-      time:new Date ().getTime(),
+      room: socket.room_id,
+      time:GetCurrTime(),
       socket_id: socket.id
 
     })
@@ -158,7 +168,7 @@ io.on('connection', (socket) => {
       user_name:socket.name,
       event:  "user  channnged name",
       eventDesc:`${socket.name} changed name to ${data.newname}`,
-      time:new Date().getTime()
+      time: GetCurrTime()
       
     })
       
@@ -182,13 +192,17 @@ io.on('connection', (socket) => {
 
   socket.on("disconnect", () =>  {
     console.log("Disconnected...")
-    io.to(socket.room_id).emit('user_left', {username: socket.name})
-    socket.leave(socket.room_id)
+
+    if (socket.room_id) {
+      io.to(socket.room_id).emit('user_left', {username: socket.name})
+      socket.leave(socket.room_id)
+    }
+
     let newEvent = new UEvent({
       user_name:socket.name,
       event:"user disconnected",
       eventDesc:"user  disconnected to the server",
-      time:new Date().getTime()
+      time:GetCurrTime()
       
     })
       

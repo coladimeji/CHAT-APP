@@ -13,13 +13,18 @@ $(() => {
     let feedback = $("#feedback")
     let room = $("#room")
     let send_roomid = $("#send_roomid")
-    let dip = $("#dip")
+    let discButton = $("#send_disconnect")
 
 
     console.log("chat.js mounted")
 
-    // get room id
+    // room index
     let room_id = room.prop('selectedIndex')
+    // user name
+    // let user_name = ""
+
+
+
 
     // update room id and send to server
     let UpdateRoomID = () => {
@@ -33,6 +38,7 @@ $(() => {
       // server need to diplay leave and enter message
       console.log(room_id)
 
+      chatroom.empty()
     }
 
     UpdateRoomID()
@@ -65,7 +71,6 @@ $(() => {
       console.log("message sent")
       console.log(room_id)
 
-      
     })
 
 
@@ -84,6 +89,23 @@ $(() => {
     })
   
 
+    // disconnect button
+    discButton.click(() => {
+      socket.disconnect()
+      console.log("disconnect");
+
+    })
+
+
+
+
+
+
+
+
+
+
+    // socket io stuff
     // receiving new messages
     socket.on('new_msg', (data) => {
       // append html element to the chatroom
@@ -111,13 +133,13 @@ $(() => {
 
     // user enter chat room
     socket.on('user_entered', (data) => {
-      chatroom.append("<p class='message'>" + data.username + " Entered Chat" + "</p>")
+      chatroom.append("<p class='message'>" + data.username + " Entered Chat Room " + data.room + "</p>")
     })
 
 
     // user leave chat room
     socket.on('user_left', (data) => {
-      chatroom.append("<p class='message'><h5>" + data.username + " Left Chat" + "</h5></p>")
+      chatroom.append("<p class='message'>" + data.username + " Left Chat Room " + data.room + "</p>")
     })
 
 
